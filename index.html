@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Card Comment Generator</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .container {
+            margin: 50px auto;
+            text-align: center;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .btn {
+            background-color: #4caf50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .student-name {
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Report Card Comment Generator</h1>
+    </header>
+    <main>
+        <div class="container">
+            <p>To generate the report, upload a sheet that shows students' first name and last name.</p>
+            <p>Example sheet:</p>
+            <img src="https://assets.wfcdn.com/im/04882761/resize-h445%5Ecompr-r85/2047/204789597/Cute+Poodle+Puppy+On+Canvas+by+Pcht+Print.jpg" alt="Example sheet">
+            <br>
+            <a href="https://docs.google.com/spreadsheets/d/1LYfo2LYj8gOd3fvY6cVkMEJUQRcHQCVdxkU0Awi9Crg/copy?usp=sharing" class="btn"><i class="fa fa-download"></i> Copy The Template</a>
+            <form id="uploadForm">
+                <label for="file" class="btn"><i class="fa fa-cloud-upload"></i> Choose File</label>
+                <input type="file" id="file">
+                <input type="submit" value="Submit" class="btn">
+            </form>
+            <div id="studentListContainer"></div>
+            <div id="mainContainer"></div>
+            <div id="promptContainer" style="display: none;">
+                <textarea id="promptTextArea" rows="10" cols="100" readonly></textarea>
+                <button id="copyPromptButton" class="btn">Copy</button>
+                <button id="resetButton" class="btn">Reset</button>
+            </div>
+            <div id="commentsContainer"></div>
+            
+        </div>
+        
+    </main>
+    <footer>
+        <p>&copy; 2024 Qiuqiu AI Prompts</p>
+    </footer>
+
+    <script>
+    let students = [];
+
+// Function to display the list of student names
+function displayStudentNames() {
+    const studentListContainer = document.getElementById('studentListContainer');
+    studentListContainer.innerHTML = '';
+
+    students.forEach((student, index) => {
+        const studentName = document.createElement('div');
+        studentName.textContent = `${student.firstName} ${student.lastName}`;
+        studentName.classList.add('student-name');
+        studentName.addEventListener('click', () => displayStudentInfo(index));
+        studentListContainer.appendChild(studentName);
+    });
+}
+displayStudentNames();
+
+// Event listener for form submission
+document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent default form submission
+
+    // Get the uploaded file
+    const fileInput = document.getElementById('file');
+    const file = fileInput.files[0];
+
+    // Read the uploaded file as text
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fileContent = e.target.result;
+            // Parse the CSV file content
+            students = parseCSV(fileContent);
+            // Display the list of student names
+            displayStudentNames();
+            // Display information for the first student
+            displayStudentInfo(0);
+        };
+        reader.readAsText(file);
+    } else {
+        console.log('No file selected');
+    }
+});
+
+// Function to parse CSV content and extract student information
+function parseCSV(csvContent) {
+    const lines = csvContent.split(/\r?\n/);
+    const students = [];
+
+    // Loop through each line of the CSV content
+    for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        if (parts.length === 2) {
+            // Create a student object with first name, last name, and gender
+            const student = {
+                firstName: parts[0],
+                lastName: parts[1],
+                gender: [],//initialize gender array
+                personality: [], // Initialize personality array
+                literacyPerformance: [], // Initialize literacyPerformance array
+                mathPerformance: [], // Initialize mathPerformance array
+                socialSkills: [] // Initialize socialSkills array
+            };
+            students.push(student);
+        }
+    }
+
+    return students;
+}
+
+// Function to display student information and collect choices
+function displayStudentInfo(index) {
+    // Retrieve student information based on index
+    const studentInfo = students[index];
+    // Get the main container element
+    const mainContainer = document.getElementById('mainContainer');
+
+    // Clear existing content in the main container
+    mainContainer.innerHTML = '';
+
+    // Display student name prominently
+    const studentNameElement = document.createElement('h1');
+    studentNameElement.textContent = `${studentInfo.firstName} ${studentInfo.lastName}`;
+    mainContainer.appendChild(studentNameElement);
+
+    // Display multiple-choice questions and checkboxes
+    const questions = [
+        { title: 'The student\'s gender is:', choices: ['Female', 'Male'], key: 'gender' },
+        { title: 'Describe the student\'s personality:', choices: ['Creative', 'Adventurous', 'Ambitious', 'Friendly', 'Hardworking'], key: 'personality' },
+        { title: 'Describe the student\'s literacy performance:', choices: ['Advanced', 'Proficient', 'Average', 'Below Average'], key: 'literacyPerformance' },
+        { title: 'Describe the student\'s math performance:', choices: ['Strong', 'Good', 'Average', 'Below Average'], key: 'mathPerformance' },
+        { title: 'Describe the student\'s social skills:', choices: ['Excellent', 'Good', 'Fair', 'Needs Improvement'], key: 'socialSkills' }
+    ];
+
+    questions.forEach(question => {
+        // Create paragraph element for the question
+        const questionElement = document.createElement('p');
+        questionElement.textContent = question.title;
+        questionElement.classList.add('question');
+        questionElement.style.fontWeight = 'bold';
+        mainContainer.appendChild(questionElement);
+
+        // Create container for choices
+        const choicesContainer = document.createElement('div');
+        choicesContainer.classList.add('choices');
+
+        // Create checkboxes for each choice
+        question.choices.forEach(choice => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = choice;
+            checkbox.name = question.title;
+            checkbox.classList.add('choice');
+            const label = document.createElement('label');
+            label.htmlFor = choice;
+            label.textContent = choice;
+
+            // Check if the choice has been previously selected and stored in localStorage
+            if (localStorage.getItem(`${studentInfo.firstName}_${studentInfo.lastName}_${question.key}`) === choice) {
+                checkbox.checked = true;
+            }
+
+            // Add event listener to store the selected choice in localStorage when changed
+            checkbox.addEventListener('change', function() {
+                if (checkbox.checked) {
+                    localStorage.setItem(`${studentInfo.firstName}_${studentInfo.lastName}_${question.key}`, choice);
+                } else {
+                    localStorage.removeItem(`${studentInfo.firstName}_${studentInfo.lastName}_${question.key}`);
+                }
+            });
+
+            choicesContainer.appendChild(checkbox);
+            choicesContainer.appendChild(label);
+        });
+
+        mainContainer.appendChild(choicesContainer);
+    });
+
+    // Create two empty rows above the Additional Comment label
+    const emptyRow1 = document.createElement('br');
+    const emptyRow2 = document.createElement('br');
+    mainContainer.appendChild(emptyRow1);
+    mainContainer.appendChild(emptyRow2);
+    // Add input box for additional comments
+    const commentLabel = document.createElement('label');
+    commentLabel.textContent = 'Additional Comment:';
+    commentLabel.for = 'comment';
+    commentLabel.style.fontWeight = 'bold';
+    mainContainer.appendChild(commentLabel);
+
+    const commentInput = document.createElement('textarea');
+    commentInput.id = 'comment';
+    commentInput.name = 'comment';
+    commentInput.cols = '100';
+    commentInput.rows = '5';
+    commentLabel.style.display = 'block';
+    commentInput.placeholder = 'You can type more specific information about this student here. e.g. Concrete examples of what students do in the class.';
+    
+    // Check if additional comment has been previously stored in localStorage
+    if (localStorage.getItem(`${studentInfo.firstName}_${studentInfo.lastName}_additionalComment`)) {
+        commentInput.value = localStorage.getItem(`${studentInfo.firstName}_${studentInfo.lastName}_additionalComment`);
+    }
+
+    // Add event listener to store the additional comment in localStorage when changed
+    commentInput.addEventListener('input', function() {
+        localStorage.setItem(`${studentInfo.firstName}_${studentInfo.lastName}_additionalComment`, commentInput.value);
+    });
+
+    mainContainer.appendChild(commentInput);
+
+    // Add button to submit choices and proceed to the next student
+    const submitButton = document.createElement('button');
+    submitButton.textContent = 'Next Student';
+    submitButton.style.display = 'block';
+    submitButton.style.margin = 'auto';
+    submitButton.classList.add('btn');
+    submitButton.addEventListener('click', function() {
+        // Proceed to the next student
+        if (index + 1 < students.length) {
+            displayStudentInfo(index + 1);
+        } else {
+            // Add Generate button after displaying information for the last student
+            const generateButton = document.createElement('button');
+            generateButton.textContent = 'Generate';
+            generateButton.classList.add('btn');
+            generateButton.addEventListener('click', function() {
+                // Generate comments for all students
+                generateCommentsForAllStudents(students)
+                    .then(comments => {
+                        // Display generated comments
+                        displayGeneratedComments(comments);
+                        // Show the prompt container after generating comments
+                        document.getElementById('promptContainer').style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Error generating comments:', error);
+                    });
+            });
+            mainContainer.appendChild(generateButton);
+        }
+    });
+
+    mainContainer.appendChild(submitButton);
+}
+function retrieveStoredData(student) {
+    const storedData = {};
+    const keys = ['gender', 'personality', 'literacyPerformance', 'mathPerformance', 'socialSkills'];
+
+    keys.forEach(key => {
+        const storedValue = localStorage.getItem(`${student.firstName}_${student.lastName}_${key}`);
+        if (storedValue) {
+            storedData[key] = storedValue;
+        }
+    });
+
+    const additionalComment = localStorage.getItem(`${student.firstName}_${student.lastName}_additionalComment`);
+    if (additionalComment) {
+        storedData.additionalComment = additionalComment;
+    }
+
+    return storedData;
+}
+
+async function generateCommentsForAllStudents(students) {
+    const generatedComments = [];
+    for (let i = 0; i < students.length; i++) {
+        const student = students[i];
+        const description = generateDescription(student);
+        generatedComments.push(description);
+    }
+    return generatedComments;
+}
+
+// Event listener for the "Generate" button
+async function generateComments() {
+    try {
+        const comments = await generateCommentsForAllStudents(students);
+        if (comments && comments.length > 0) {
+            displayGeneratedComments(comments);
+        } else {
+            console.error('Generated comments are empty or undefined');
+        }
+    } catch (error) {
+        console.error('Error generating comments:', error);
+    }
+}
+// Function to generate short description for a student
+function generateDescription(student) {
+    let description = `${student.firstName}'s gender is ${localStorage.getItem(`${student.firstName}_${student.lastName}_gender`) || 'unknown'}. `;
+    description += `${student.firstName}'s personality is ${localStorage.getItem(`${student.firstName}_${student.lastName}_personality`) || 'unknown'}; `;
+    description += `literacy skill is ${localStorage.getItem(`${student.firstName}_${student.lastName}_literacyPerformance`) || 'unknown'}; `;
+    description += `math skill is ${localStorage.getItem(`${student.firstName}_${student.lastName}_mathPerformance`) || 'unknown'}; `;
+    description += `social skills are ${localStorage.getItem(`${student.firstName}_${student.lastName}_socialSkills`) || 'unknown'}.`;
+    
+    // Retrieve additional comment
+    const additionalComment = localStorage.getItem(`${student.firstName}_${student.lastName}_additionalComment`);
+    if (additionalComment) {
+        description += ` Additional Comment: ${additionalComment}`;
+    }
+    
+    return description;
+}
+
+function displayGeneratedComments(comments) {
+    // Introductory message
+    const introductoryMessage = 'Dear AI, suppose you are a school teacher, writing the report card comment to send home. So the parents can get updates of their childen at school. I kindly request a detailed 500-word report card comment for each student based on the provided descriptions. Please begin each comment with a statement like "XXX is a creative student who..." to introduce the uniqueness for each student. The gender information is provided to assist in addressing the student correctly. Thank you for your assistance.\n\n';
+
+    // Concatenate all generated comments into a single string
+    const allComments = comments.join('\n\n');
+
+    // Combine the introductory message with the comments
+    const fullMessage = introductoryMessage + allComments;
+
+    // Set the value of the text area to the concatenated message
+    const promptTextArea = document.getElementById('promptTextArea');
+    promptTextArea.value = fullMessage;
+}
+const copyPromptButton = document.getElementById('copyPromptButton');
+
+// Add click event listener to the copy button
+copyPromptButton.addEventListener('click', function() {
+    // Select the text in the text area
+    promptTextArea.select();
+    
+    // Copy the selected text to the clipboard
+    document.execCommand('copy');
+    
+    // Deselect the text
+    promptTextArea.blur();
+    
+    // Optionally, provide visual feedback to the user
+    alert('Prompt copied to clipboard!');
+});
+document.getElementById('resetButton').addEventListener('click', function() {
+    // Clear local storage
+    localStorage.clear();
+    // Reset the form
+    document.getElementById('uploadForm').reset();
+    // Clear student list container
+    document.getElementById('studentListContainer').innerHTML = '';
+    // Clear main container
+    document.getElementById('mainContainer').innerHTML = '';
+    // Clear comments container
+    document.getElementById('commentsContainer').innerHTML = '';
+    // Hide the prompt container
+    document.getElementById('promptContainer').style.display = 'none';
+});
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
